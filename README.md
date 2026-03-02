@@ -14,3 +14,12 @@ The `data_cleaning.py` script processes the raw JSON files, filters for standard
 2. Install the required libraries: 
    ```bash
    pip install -r requirements.txt
+   ```
+3. Run the Data Collection script to download the games: 
+    ```bash
+    python src/Data-Collection.py
+    ```
+4. Run the Data Cleaning script to extract board states and moves:
+    ```bash
+    python src/data_cleaning.py
+    ```
