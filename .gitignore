@@ -9,3 +9,4 @@ __pycache__/
 .DS_Store
 
 foo.txt
+play.py

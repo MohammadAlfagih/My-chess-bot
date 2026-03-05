@@ -15,6 +15,9 @@ The `data_cleaning.py` script processes the raw JSON files, filters for standard
 - **Model (`model.py`):** A custom Convolutional Neural Network (CNN) built with PyTorch. It features 4 Conv2d layers with Batch Normalization and LeakyReLU activations to extract spatial board patterns, followed by Fully Connected layers to predict the next move.
 
 
+## Phase 4: Model Training
+The `train.py` script connects the dataset and the model. It splits the data into training and validation sets, uses CrossEntropyLoss with the AdamW optimizer, and runs the training loop. It implements Early Stopping to save the best-performing model weights (`best_chess_model.pth`) and the move vocabulary (`move_vocab.json`) inside the `models/` directory.
+
 ## How to run
 1. Clone the repository.
 2. Install the required libraries: 
