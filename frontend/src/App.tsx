@@ -1,31 +1,56 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {Chess, type Square } from  "chess.js"
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from 'react-chessboard'
+import { useChessBot } from './hooks/useChessBot'
+
 
 function App() {
   const chessGameRef = useRef(new Chess())
   const chessGame = chessGameRef.current
+  const [chessPosition, setChessPosition] = useState(() => new Chess().fen())
   
 
-  const [chessPosition, setChessPosition] = useState(chessGame.fen())
   const [moveFrom, setMoveFrom] = useState("")
   const [optionSquares, setOptionSquares] = useState({})
+  const [botColor, setBotColor] = useState<"w" | "b">('b')
+  const {isConnected,botMove,sendPosition,setBotMove} = useChessBot(botColor)
+
+  useEffect(() => {
+    if(botMove){
+      try {
+        const from = botMove.substring(0,2)
+        const to = botMove.substring(2,4)
+        const promotion = botMove.length > 4 ? botMove[4] : 'q'
+        chessGame.move({from,to,promotion})
+        setChessPosition(chessGame.fen())
+        setBotMove(null)
+      } catch (e) {
+        console.error("error happend", e)
+      }
+    }
+  },[botMove,setBotMove,chessGame])
+  //if bot is white
+  useEffect(() => {
+    if( isConnected && botColor ==='w' && chessGame.history().length ===0){
+      sendPosition(chessGame.fen())
+    }
+  },[isConnected,botColor,chessGame,sendPosition])
 
   // random move Generator
-  function makeRandomMove(){
+  // function makeRandomMove(){
     
     
-    const possibleMoves = chessGame.moves()
+  //   const possibleMoves = chessGame.moves()
     
-    if(chessGame.isGameOver()){
-      return
-    }
+  //   if(chessGame.isGameOver()){
+  //     return
+  //   }
 
-    const ranadomMove = possibleMoves[Math.floor(Math.random()  * possibleMoves.length)]
+  //   const ranadomMove = possibleMoves[Math.floor(Math.random()  * possibleMoves.length)]
 
-    chessGame.move(ranadomMove)
-    setChessPosition(chessGame.fen())
-  }
+  //   chessGame.move(ranadomMove)
+  //   setChessPosition(chessGame.fen())
+  // }
 
   function onPieceDrop({sourceSquare,targetSquare} : PieceDropHandlerArgs){
     if(!targetSquare) return false
@@ -33,7 +58,7 @@ function App() {
   try {
     chessGame.move({from:sourceSquare, to:targetSquare, promotion:"q"})
     setChessPosition(chessGame.fen())
-    setTimeout(makeRandomMove, 500);
+    sendPosition(chessGame.fen())
     return true
   }catch{
     return false
@@ -129,7 +154,7 @@ function App() {
       setChessPosition(chessGame.fen());
 
       // make random cpu move after a short delay
-      setTimeout(makeRandomMove, 300);
+      sendPosition(chessGame.fen())
 
       // clear moveFrom and optionSquares
       setMoveFrom('');
@@ -143,7 +168,7 @@ function App() {
 
 
   const chessBoardOptions = {
-    allowDragging: false,
+    allowDragging: true,
     position: chessPosition,
     onPieceDrop,
     id: 'play-vs-random',
