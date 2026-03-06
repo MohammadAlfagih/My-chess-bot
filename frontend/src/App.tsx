@@ -1,12 +1,15 @@
-import { useState, useRef } from 'react'
-import {Chess } from  "chess.js"
-import { Chessboard, type PieceDropHandlerArgs } from 'react-chessboard'
+import React, { useState, useRef } from 'react'
+import {Chess, type Square } from  "chess.js"
+import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from 'react-chessboard'
 
 function App() {
   const chessGameRef = useRef(new Chess())
   const chessGame = chessGameRef.current
+  
 
   const [chessPosition, setChessPosition] = useState(chessGame.fen())
+  const [moveFrom, setMoveFrom] = useState("")
+  const [optionSquares, setOptionSquares] = useState({})
 
   // random move Generator
   function makeRandomMove(){
@@ -35,10 +38,119 @@ function App() {
   }catch{
     return false
   }}
+  
+  function getMoveOptions(square: Square){
+    const moves = chessGame.moves({
+        square,
+        verbose: true
+      });
+    if (moves.length ===0){
+      setOptionSquares({})
+      return false
+    }
+    const newSquares : Record<string, React.CSSProperties> ={}
+    for (const move of moves){
+      newSquares[move.to] = {
+        background: chessGame.get(move.to) && chessGame.get(move.to)?.color !== chessGame.get(square)?.color ? 'radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)'
+        : 'radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)',
+        // smaller circle for moving
+          borderRadius: '50%'
+      }
+    }
+    newSquares[square] = {
+        background: 'rgba(255, 255, 0, 0.4)'
+      };
+
+      // set the option squares
+      setOptionSquares(newSquares);
+
+      // return true to indicate that there are move options
+      return true;
+  }
+
+   function onSquareClick({
+      square,
+      piece
+    }: SquareHandlerArgs) {
+      // piece clicked to move
+      if (!moveFrom && piece) {
+        // get the move options for the square
+        const hasMoveOptions = getMoveOptions(square as Square);
+
+        // if move options, set the moveFrom to the square
+        if (hasMoveOptions) {
+          setMoveFrom(square);
+        }
+
+        // return early
+        return;
+      }
+
+      // square clicked to move to, check if valid move
+      const moves = chessGame.moves({
+        square: moveFrom as Square,
+        verbose: true
+      });
+      const foundMove = moves.find(m => m.from === moveFrom && m.to === square);
+
+      // not a valid move
+      if (!foundMove) {
+        // check if clicked on new piece
+        const hasMoveOptions = getMoveOptions(square as Square);
+
+        // if new piece, setMoveFrom, otherwise clear moveFrom
+        setMoveFrom(hasMoveOptions ? square : '');
+
+        // return early
+        return;
+      }
+
+      // is normal move
+      try {
+        chessGame.move({
+          from: moveFrom,
+          to: square,
+          promotion: 'q'
+        });
+      } catch {
+        // if invalid, setMoveFrom and getMoveOptions
+        const hasMoveOptions = getMoveOptions(square as Square);
+
+        // if new piece, setMoveFrom, otherwise clear moveFrom
+        if (hasMoveOptions) {
+          setMoveFrom(square);
+        }
+
+        // return early
+        return;
+      }
+
+      // update the position state
+      setChessPosition(chessGame.fen());
+
+      // make random cpu move after a short delay
+      setTimeout(makeRandomMove, 300);
+
+      // clear moveFrom and optionSquares
+      setMoveFrom('');
+      setOptionSquares({});
+    }
+
+
+
+
+
+
+
   const chessBoardOptions = {
+    allowDragging: false,
     position: chessPosition,
     onPieceDrop,
-    id: 'play-vs-random'
+    id: 'play-vs-random',
+    onSquareClick,
+          squareStyles: optionSquares,
+
+
   }
 
   return (
