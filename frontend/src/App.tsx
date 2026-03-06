@@ -6,17 +6,18 @@ import { useChessBot } from './hooks/useChessBot'
 
 function App() {
   const chessGameRef = useRef(new Chess())
-  const chessGame = chessGameRef.current
   const [chessPosition, setChessPosition] = useState(() => new Chess().fen())
   
 
   const [moveFrom, setMoveFrom] = useState("")
   const [optionSquares, setOptionSquares] = useState({})
-  const [botColor, setBotColor] = useState<"w" | "b">('b')
+  const [botColor] = useState<"w" | "b">('b')
   const {isConnected,botMove,sendPosition,setBotMove} = useChessBot(botColor)
 
   useEffect(() => {
     if(botMove){
+        const chessGame = chessGameRef.current
+
       try {
         const from = botMove.substring(0,2)
         const to = botMove.substring(2,4)
@@ -28,13 +29,15 @@ function App() {
         console.error("error happend", e)
       }
     }
-  },[botMove,setBotMove,chessGame])
+  },[botMove,setBotMove])
   //if bot is white
   useEffect(() => {
+      const chessGame = chessGameRef.current
+
     if( isConnected && botColor ==='w' && chessGame.history().length ===0){
       sendPosition(chessGame.fen())
     }
-  },[isConnected,botColor,chessGame,sendPosition])
+  },[isConnected,botColor,sendPosition])
 
   // random move Generator
   // function makeRandomMove(){
@@ -53,6 +56,7 @@ function App() {
   // }
 
   function onPieceDrop({sourceSquare,targetSquare} : PieceDropHandlerArgs){
+      const chessGame = chessGameRef.current
     if(!targetSquare) return false
   
   try {
@@ -65,6 +69,8 @@ function App() {
   }}
   
   function getMoveOptions(square: Square){
+      const chessGame = chessGameRef.current
+
     const moves = chessGame.moves({
         square,
         verbose: true
@@ -97,6 +103,8 @@ function App() {
       square,
       piece
     }: SquareHandlerArgs) {
+        const chessGame = chessGameRef.current
+
       // piece clicked to move
       if (!moveFrom && piece) {
         // get the move options for the square
