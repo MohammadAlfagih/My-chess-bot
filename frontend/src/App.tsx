@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Chess, type Square } from "chess.js";
 import {
   Chessboard,
@@ -6,11 +6,12 @@ import {
   type SquareHandlerArgs,
 } from "react-chessboard";
 import { useChessBot } from "./hooks/useChessBot";
+import Engine from "./utils/engine";
 
 function App() {
   const chessGameRef = useRef(new Chess());
   const [chessPosition, setChessPosition] = useState(() => new Chess().fen());
-  const [resetCount, setResetCount] = useState(0)
+  const [resetCount, setResetCount] = useState(0);
   const [moveFrom, setMoveFrom] = useState("");
   const [optionSquares, setOptionSquares] = useState({});
   const [botColor, setBotColor] = useState<"w" | "b">("b");
@@ -20,16 +21,38 @@ function App() {
     "white",
   );
 
-
-  //Move history Functionlaty
-  const movesContainerRef = useRef<HTMLDivElement>(null)
+  //enging For evaluation
+  const engine = useMemo(() => new Engine(), []);
+  const [positionEvaluation, setPositionEvaluation] = useState(0);
+  const [possibleMate, setPossibleMate] = useState("");
 
   useEffect(() => {
-    if(movesContainerRef.current){
-      movesContainerRef.current.scrollTop = movesContainerRef.current.scrollHeight
+    const chessGame = chessGameRef.current;
+    if (!chessGame.isGameOver() || chessGame.isDraw()) {
+      engine.evaluatePosition(chessGame.fen(), 18);
+      engine.onMessage(({ positionEvaluation, possibleMate, depth }) => {
+        if (depth && depth < 10) return;
+        if (positionEvaluation) {
+          const evalValue =
+            ((chessGame.turn() == "w" ? 1 : -1) * Number(positionEvaluation)) /
+            100;
+          setPositionEvaluation(evalValue);
+        }
+        if (possibleMate !== undefined) {
+          setPossibleMate(possibleMate);
+        }
+      });
     }
-  }, [chessPosition])
+  }, [chessPosition, engine]);
+  //Move history Functionlaty
+  const movesContainerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (movesContainerRef.current) {
+      movesContainerRef.current.scrollTop =
+        movesContainerRef.current.scrollHeight;
+    }
+  }, [chessPosition]);
 
   useEffect(() => {
     if (botMove) {
@@ -54,7 +77,7 @@ function App() {
     if (isConnected && botColor === "w" && chessGame.history().length === 0) {
       sendPosition(chessGame.fen());
     }
-  }, [isConnected, botColor, sendPosition,resetCount]);
+  }, [isConnected, botColor, sendPosition, resetCount]);
 
   // random move Generator
   // function makeRandomMove(){
@@ -185,19 +208,19 @@ function App() {
     setMoveFrom("");
     setOptionSquares({});
   }
-
-  const getMovePairs = ( ) =>{
-    const history = chessGameRef.current.history()
-    const pairs =[]
-    for(let i =0;i < history.length;i+=2){
+  const currentGame = useMemo(() => new Chess(chessPosition), [chessPosition]);
+  const getMovePairs = () => {
+    const history = currentGame.history();
+    const pairs = [];
+    for (let i = 0; i < history.length; i += 2) {
       pairs.push({
         white: history[i],
-        black: history[i+1]
-      })
+        black: history[i + 1],
+      });
     }
-    return pairs
-  }
-  const movePairs = getMovePairs()
+    return pairs;
+  };
+  const movePairs = getMovePairs();
 
   const chessBoardOptions = {
     allowDragging: true,
@@ -209,21 +232,46 @@ function App() {
     boardOrientation: boardOrientation,
   };
 
+  //enging
+  let whitePercentage = 50;
+  let displayEval = Math.abs(positionEvaluation).toFixed(1);
+
+  if (possibleMate) {
+    const isWhiteMate =
+      (currentGame.turn() === "w" && Number(possibleMate) > 0) ||
+      (currentGame.turn() === "b" && Number(possibleMate) < 0);
+    whitePercentage = isWhiteMate ? 100 : 0;
+    displayEval = `M${Math.abs(Number(possibleMate))}`;
+  } else {
+    whitePercentage = 50 + positionEvaluation * 10;
+    whitePercentage = Math.max(5, Math.min(95, whitePercentage));
+  }
+
+  const isBlackBottom = boardOrientation === "black";
+  const barFillPercentage = isBlackBottom
+    ? 100 - whitePercentage
+    : whitePercentage;
+  const topColor = isBlackBottom
+    ? "bg-white text-gray-900"
+    : "bg-[#333333] text-white";
+  const bottomColor = isBlackBottom
+    ? "bg-[#333333] text-white"
+    : "bg-white text-gray-900";
   return (
     <div className="flex flex-col md:flex-row items-center md:items:start  justify-center min-h-screen font-sans text-white gap-8 p-4">
       <div className="w-full md:w-[280px] h-[500px] bg-[#262421] rounded-lg shadow-xl flex flex-col overflow-hidden border border-[#3c3a38]">
         <div className="bg-[#302e2b] text-[#bfb8b0] text-sm font-bold py-3 px-4 shadow-sm">
           Move History
         </div>
-        
-        <div 
+
+        <div
           ref={movesContainerRef}
           className="flex-1 overflow-y-auto custom-scrollbar"
         >
           {movePairs.map((pair, index) => (
-            <div 
-              key={index} 
-              className={`flex items-center text-[15px] font-semibold ${index % 2 === 0 ? 'bg-[#2b2927]' : 'bg-[#262421]'}`}
+            <div
+              key={index}
+              className={`flex items-center text-[15px] font-semibold ${index % 2 === 0 ? "bg-[#2b2927]" : "bg-[#262421]"}`}
             >
               {/* Move Num */}
               <div className="w-12 text-center text-[#827e77] py-1 border-r border-[#3c3a38]">
@@ -241,43 +289,68 @@ function App() {
           ))}
         </div>
       </div>
-      <div className="w-full max-w-[500px] px-4">
+      <div className="w-full max-w-[600px] px-4">
         <p className="font-bold text-center mb-6 text-gray-100">
           مبروك لك الشرف بتلعب مع بوت اللورد محمد☕، ان شاء الله اذا صرت شخص كفو
           بيفضي لك محمد ربع ساعة من وقته ويلعب معك
         </p>
+        <div className="flex items-stretch gap-2">
+          <div className="w-10  flex flex-col rounded-sm overflow-hidden border border-gray-700 bg-gray-500 relative">
+            {/* الجزء العلوي (خصمك) */}
+            <div
+              className={`w-full transition-all duration-500 ease-out flex justify-center ${topColor}`}
+              style={{ height: `${100 - barFillPercentage}%` }}
+            >
+              <span
+                className={`text-[10px] font-bold mt-1 ${(positionEvaluation < 0 && !isBlackBottom) || (positionEvaluation > 0 && isBlackBottom) ? "opacity-100" : "opacity-0"}`}
+              >
+                {displayEval}
+              </span>
+            </div>
 
-        <div className="shadow-2xl rounded-lg overflow-hidden border-4 border-gray-700">
-          <Chessboard options={chessBoardOptions} />
+            {/* الجزء السفلي (أنت) */}
+            <div
+              className={`w-full transition-all duration-500 ease-out flex justify-center items-end pb-1 ${bottomColor}`}
+              style={{ height: `${barFillPercentage}%` }}
+            >
+              <span
+                className={`text-[10px] font-bold ${(positionEvaluation > 0 && !isBlackBottom) || (positionEvaluation < 0 && isBlackBottom) ? "opacity-100" : "opacity-0"}`}
+              >
+                {displayEval}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1 shadow-2xl rounded-lg overflow-hidden border-4 border-gray-700">
+            <Chessboard options={chessBoardOptions} />
+          </div>
         </div>
+
         <div className="flex justify-center gap-4 mt-8">
-
-        
-        <button
-          onClick={() => {
-            chessGameRef.current.reset();
-            setChessPosition(chessGameRef.current.fen());
-            setBotColor("w");
-            setBoardOrientation("black");
-            setResetCount(c => c+1)
-          }}
-          className="px-6 py-3 bg-gray-800 hover:bg-gray-700 hover:cursor-pointer text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out border border-gray-600 w-1/2"
-
-        >
-          Play as black
-        </button>
-        <button
-          onClick={() => {
-            chessGameRef.current.reset();
-            setChessPosition(chessGameRef.current.fen());
-            setBotColor("b");
-            setBoardOrientation("white");
-            setResetCount(c => c+1)
-          }}
-          className="px-6 py-3 bg-gray-100 hover:cursor-pointer hover:bg-gray-300 text-gray-900 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out w-1/2"
-        >
-          Play as White
-        </button>
+          <button
+            onClick={() => {
+              chessGameRef.current.reset();
+              setChessPosition(chessGameRef.current.fen());
+              setBotColor("w");
+              setBoardOrientation("black");
+              setResetCount((c) => c + 1);
+            }}
+            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 hover:cursor-pointer text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out border border-gray-600 w-1/2"
+          >
+            Play as black
+          </button>
+          <button
+            onClick={() => {
+              chessGameRef.current.reset();
+              setChessPosition(chessGameRef.current.fen());
+              setBotColor("b");
+              setBoardOrientation("white");
+              setResetCount((c) => c + 1);
+            }}
+            className="px-6 py-3 bg-gray-100 hover:cursor-pointer hover:bg-gray-300 text-gray-900 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out w-1/2"
+          >
+            Play as White
+          </button>
         </div>
       </div>
     </div>
