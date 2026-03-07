@@ -1,5 +1,5 @@
 @import "tailwindcss";
 
 body {
-  @apply bg-[#242424] m-0;
+  @apply bg-gradient-to-br from-gray-900 via-[#242424] to-black m-0 min-h-screen;
 }

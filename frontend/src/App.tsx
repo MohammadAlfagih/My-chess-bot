@@ -196,6 +196,9 @@ function App() {
         <div className="shadow-2xl rounded-lg overflow-hidden border-4 border-gray-700">
           <Chessboard options={chessBoardOptions} />
         </div>
+        <div className="flex justify-center gap-4 mt-8">
+
+        
         <button
           onClick={() => {
             chessGameRef.current.reset();
@@ -204,6 +207,8 @@ function App() {
             setBoardOrientation("black");
             setResetCount(c => c+1)
           }}
+          className="px-6 py-3 bg-gray-800 hover:bg-gray-700 hover:cursor-pointer text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out border border-gray-600 w-1/2"
+
         >
           Play as black
         </button>
@@ -215,9 +220,11 @@ function App() {
             setBoardOrientation("white");
             setResetCount(c => c+1)
           }}
+          className="px-6 py-3 bg-gray-100 hover:cursor-pointer hover:bg-gray-300 text-gray-900 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out w-1/2"
         >
           Play as White
         </button>
+        </div>
       </div>
     </div>
   );
