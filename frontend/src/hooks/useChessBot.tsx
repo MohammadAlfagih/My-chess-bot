@@ -32,7 +32,7 @@ export function useChessBot(botcolor: 'w' | "b"){
     const sendPosition = useCallback((fen: string) => {
         if(wsRef.current && wsRef.current.readyState === WebSocket.OPEN){
             setBotMove(null)
-            wsRef.current.send(JSON.stringify({fen, botcolor: botcolor}))
+            wsRef.current.send(JSON.stringify({fen, bot_color: botcolor}))
         }else{
             console.warn("no connction yet")
         }
