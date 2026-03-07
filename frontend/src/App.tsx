@@ -15,6 +15,9 @@ function App() {
   const [moveFrom, setMoveFrom] = useState("");
   const [optionSquares, setOptionSquares] = useState({});
   const [botColor, setBotColor] = useState<"w" | "b">("b");
+
+  const [moveHistory] = useState<string[]>([]);
+
   const { isConnected, botMove, sendPosition, setBotMove } =
     useChessBot(botColor);
   const [boardOrientation, setBoardOrientation] = useState<"white" | "black">(
@@ -210,12 +213,11 @@ function App() {
   }
   const currentGame = useMemo(() => new Chess(chessPosition), [chessPosition]);
   const getMovePairs = () => {
-    const history = currentGame.history();
     const pairs = [];
-    for (let i = 0; i < history.length; i += 2) {
+    for (let i = 0; i < moveHistory.length; i += 2) {
       pairs.push({
-        white: history[i],
-        black: history[i + 1],
+        white: moveHistory[i],
+        black: moveHistory[i + 1],
       });
     }
     return pairs;
@@ -288,6 +290,35 @@ function App() {
             </div>
           ))}
         </div>
+        <button
+          onClick={() =>{
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}.${mm}.${dd}`;
+
+            const whitePlayer = botColor === 'w' ? 'LordMo7aBOT' : 'Player';
+            const blackPlayer = botColor === 'b' ? 'LordMo7aBOT' : 'Player';
+
+            chessGameRef.current.header(
+              'Event', 'Vs LordMo7a',
+              'Site', 'Local',
+              'Date', formattedDate,
+              'Round', '1',
+              'White', whitePlayer,
+              'Black', blackPlayer
+            );
+
+            // استخراج الـ PGN بعد التحديث
+            const pgn = chessGameRef.current.pgn();
+            navigator.clipboard.writeText(pgn);
+            alert("تم نسخ النقلات (PGN) للحافظة 📋");
+          }}
+          className="bg-[#302e2b] hover:bg-[#3c3a38] text-[#bfb8b0] text-sm font-bold py-3 px-4 transition-colors duration-200 border-t border-[#3c3a38]"
+        >
+          Copy PGN 📋
+        </button>
       </div>
       <div className="w-full max-w-[600px] px-4">
         <p className="font-bold text-center mb-6 text-gray-100">
