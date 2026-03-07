@@ -20,6 +20,17 @@ function App() {
     "white",
   );
 
+
+  //Move history Functionlaty
+  const movesContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if(movesContainerRef.current){
+      movesContainerRef.current.scrollTop = movesContainerRef.current.scrollHeight
+    }
+  }, [chessPosition])
+
+
   useEffect(() => {
     if (botMove) {
       const chessGame = chessGameRef.current;
@@ -175,6 +186,19 @@ function App() {
     setOptionSquares({});
   }
 
+  const getMovePairs = ( ) =>{
+    const history = chessGameRef.current.history()
+    const pairs =[]
+    for(let i =0;i < history.length;i+=2){
+      pairs.push({
+        white: history[i],
+        black: history[i+1]
+      })
+    }
+    return pairs
+  }
+  const movePairs = getMovePairs()
+
   const chessBoardOptions = {
     allowDragging: true,
     position: chessPosition,
@@ -186,7 +210,37 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen font-sans text-white">
+    <div className="flex flex-col md:flex-row items-center md:items:start  justify-center min-h-screen font-sans text-white gap-8 p-4">
+      <div className="w-full md:w-[280px] h-[500px] bg-[#262421] rounded-lg shadow-xl flex flex-col overflow-hidden border border-[#3c3a38]">
+        <div className="bg-[#302e2b] text-[#bfb8b0] text-sm font-bold py-3 px-4 shadow-sm">
+          Move History
+        </div>
+        
+        <div 
+          ref={movesContainerRef}
+          className="flex-1 overflow-y-auto custom-scrollbar"
+        >
+          {movePairs.map((pair, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center text-[15px] font-semibold ${index % 2 === 0 ? 'bg-[#2b2927]' : 'bg-[#262421]'}`}
+            >
+              {/* Move Num */}
+              <div className="w-12 text-center text-[#827e77] py-1 border-r border-[#3c3a38]">
+                {index + 1}.
+              </div>
+              {/* white move */}
+              <div className="flex-1 px-4 py-1 text-[#e1e0df]">
+                {pair.white}
+              </div>
+              {/* Blackmove*/}
+              <div className="flex-1 px-4 py-1 text-[#e1e0df]">
+                {pair.black}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="w-full max-w-[500px] px-4">
         <p className="font-bold text-center mb-6 text-gray-100">
           مبروك لك الشرف بتلعب مع بوت اللورد محمد☕، ان شاء الله اذا صرت شخص كفو

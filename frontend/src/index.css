@@ -3,3 +3,16 @@
 body {
   @apply bg-gradient-to-br from-gray-900 via-[#242424] to-black m-0 min-h-screen;
 }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #21201d; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4d4b48; 
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6a6762; 
+}
